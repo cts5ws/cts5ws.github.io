@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+	<script>
+
+	const teamToOwner = {
+		"ARI": "Cody",
+		"ATL": "Mike",
+		"BAL": "Jake",
+		"BUF": "Cole",
+		"CAR": "Ossman",
+		"CHI": "Rudy",
+		"CIN": "Nathan",
+		"CLE": "Nathan",
+		"DAL": "Rudy",
+		"DEN": "Ryan",
+		"DET": "",
+		"GB": "Ryan",
+		"HOU": "",
+		"IND": "John",
+		"JAX": "Cole",
+		"LAC": "Mike",
+		"LAR": "Cody",
+		"LV": "Jake",
+		"KC": "Ossman",
+		"MIA": "John",
+		"MIN": "Jon",
+		"NE": "Ryan",
+		"NO": "Jake",
+		"NYG": "Ossman",
+		"NYJ": "Cody",
+		"PHI": "Jon",
+		"PIT": "John",
+		"SEA": "Mike",
+		"SF": "Nathan",
+		"TB": "Rudy",
+		"TEN": "Jon",
+		"WSH": "Cole"
+	};
+
+	var ownerToTeams = {
+		"Cody": [],
+		"Cole": [],
+		"Jake": [],
+		"John": [],
+		"Jon": [],
+		"Mike": [],
+		"Nathan": [],
+		"Ossman": [],
+		"Rudy": [],
+		"Ryan": []
+	}
+
+	var teamToStats = {};
+	var ownerToRecord = {
+		"Cody": {"wins": 0, "losses": 0, "ties": 0},
+		"Cole": {"wins": 0, "losses": 0, "ties": 0},
+		"Jake": {"wins": 0, "losses": 0, "ties": 0},
+		"John": {"wins": 0, "losses": 0, "ties": 0},
+		"Jon": {"wins": 0, "losses": 0, "ties": 0},
+		"Mike": {"wins": 0, "losses": 0, "ties": 0},
+		"Nathan": {"wins": 0, "losses": 0, "ties": 0},
+		"Ossman": {"wins": 0, "losses": 0, "ties": 0},
+		"Rudy": {"wins": 0, "losses": 0, "ties": 0},
+		"Ryan": {"wins": 0, "losses": 0, "ties": 0}
+	};
+
+	var espnStandingUrl = "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?seasontype=2";
+
+	var rowTemplate = "<tr><td align=\"center\">{0}</td><td align=\"center\">{1}</td><td align=\"center\">{2}</td><td align=\"center\">{3}</td><td align=\"center\">{4}</td><td align=\"center\">{5}</td><td align=\"center\">{6}</td><td align=\"center\">{7}</td><td align=\"center\">{8}</td></tr>";
+	
+	var imgTemplate = "<img src=\"{0}\" width=\"40\" height=\"40\">";
+
+	function generateRanking(){
+
+		fetchAndAggregate().then(() => {
+			renderRanking();
+		});
+
+		console.log(ownerToTeams);
+	}
+
+	function renderRanking(){
+		var ownerList = [];
+
+		for (let [owner, record] of Object.entries(ownerToRecord)) {
+			item = {};
+			
+			item.owner = owner;
+			item.wins = record.wins;
+			item.losses = record.losses;
+			item.ties = record.ties;
+
+			ownerList.push(item);
+		}
+
+		ownerList.sort((a,b) => b.wins - a.wins);
+
+		var rankingCounter = 1;
+
+		for (var i = 0; i < ownerList.length; i++) {
+		    var item = ownerList[i];
+		    
+		    var record = String.format("{0} - {1} - {2}", item.wins, item.losses, item.ties);
+
+		    var teamData = ownerToTeams[item.owner];
+
+		    teamData.sort((a,b) => b.wins - a.wins);
+
+		    var team1Logo = String.format(imgTemplate, teamData[0].logos[0].href)
+		    var team1Record = String.format(" {0} - {1} - {2}", teamData[0].wins, teamData[0].losses, teamData[0].ties)
+
+		    var team2Logo = String.format(imgTemplate, teamData[1].logos[0].href)
+		    var team2Record = String.format(" {0} - {1} - {2}", teamData[1].wins, teamData[1].losses, teamData[1].ties)
+
+		    var team3Logo = String.format(imgTemplate, teamData[2].logos[0].href)
+		    var team3Record = String.format(" {0} - {1} - {2}", teamData[2].wins, teamData[2].losses, teamData[2].ties)
+
+			var row =  String.format(rowTemplate, rankingCounter, item.owner, record, team1Logo, team1Record, team2Logo, team2Record, team3Logo, team3Record);
+			document.getElementById("tableBody").innerHTML += row;
+
+			if(item.owner == "Cole"){
+				if(rankingCounter == 1){
+					document.getElementById("title").innerHTML += "   Yes &#128523";
+				} else {
+					document.getElementById("title").innerHTML += "   No &#128531";
+				}
+			}
+
+			if(i != ownerList.length - 1 && item.wins != ownerList[i+1].wins){
+				rankingCounter += 1;
+			}
+		}
+	}
+
+	function fetchAndAggregate() {
+
+		return axios.get(espnStandingUrl).then(resp => {
+
+			var afcTeams = resp.data.children[0].standings.entries;
+			var nfcTeams = resp.data.children[1].standings.entries;
+
+			var allTeams = afcTeams.concat(nfcTeams);
+
+			allTeams.forEach(teamData => {
+
+				var teamAbbreviation = teamData.team.abbreviation;
+
+				if(teamToOwner[teamAbbreviation]) {
+					
+					teamToStats[teamAbbreviation] = teamData.stats;
+
+					var ownerName = teamToOwner[teamAbbreviation];
+
+					ownerToRecord[ownerName].wins += teamData.stats[1].value;
+					ownerToRecord[ownerName].losses += teamData.stats[2].value;
+					ownerToRecord[ownerName].ties += teamData.stats[5].value;
+
+					var teamSummary = new Object();
+
+					teamSummary.abbreviation = teamData.team.abbreviation;
+					teamSummary.logos = teamData.team.logos;
+					teamSummary.wins = teamData.stats[1].value;
+					teamSummary.losses = teamData.stats[2].value;
+					teamSummary.ties = teamData.stats[5].value;
+
+					ownerToTeams[ownerName].push(teamSummary);
+				}
+
+			});
+		});
+	}
+
+	String.format = function() {
+      var s = arguments[0];
+      for (var i = 0; i < arguments.length - 1; i++) {
+          var reg = new RegExp("\\{" + i + "\\}", "gm");
+          s = s.replace(reg, arguments[i + 1]);
+      }
+      return s;
+  }
+
+</script>
+
+</head>
+<body onload="generateRanking()">
+<style type="text/css">
+	.flex-container {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  justify-content: center;
+	}
+
+	.flex-container > div, p {
+	  background-color: #f1f1f1;
+	  width: 300px;
+	  margin: 10px;
+	  text-align: center;
+	  line-height: 30px;
+	  font-size: 14px;
+	}
+	.form-field {
+		text-align: center
+	}
+</style>
+
+
+<div id="top-level-div">
+
+	<div id="title-div" class="flex-container">
+		<h3 id="title">Is Cole Winning?</h3>
+	</div>
+
+	<div id="ranking-div" class="flex-container">
+		<table border="1">
+			<thead>
+				<tr>
+					<th>Ranking</th><th>Name</th><th>Overall Record</th><th></th><th></th><th></th><th></th><th></th><th></th>
+				</tr>
+			</thead>
+			<tbody id="tableBody">
+				
+			</tbody>
+		</table>
+	</div>
+
+</div>
+
+
+</body>
+</html>
