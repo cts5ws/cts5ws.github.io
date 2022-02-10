@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+	<script>
+
+	var dateMap = {
+		7: "SUN",
+		1: "MON",
+		2: "TUE",
+		3: "WED",
+		4: "THU",
+		5: "FRI",
+		6: "SAT"
+	};
+
+	var teamToStats = {};
+
+	var scheduleUrl = "https://site.api.espn.com/apis/fantasy/v2/games/fba/games?useMap=true&dates={0}";
+
+	var rowTemplate = "<tr><td align=\"center\">{0}</td><td align=\"center\">{1}</td><td align=\"center\">{2}</td>";
+	
+	function generateSchedule() {
+		fetchData().then(() => {
+			render();
+		});
+	}
+
+  function fetchData(){
+		var date = new Date();
+		var promises = []
+		while (date.getDay() != 1) {
+			var dateString = date.toISOString().split('T')[0].replace(/-/g,"");
+			var promise = axios.get(String.format(scheduleUrl, dateString))
+			promises.push(promise);
+			date.setDate(date.getDate() + 1);
+		}
+
+		return Promise.allSettled(promises).then(responses => {
+			responses.forEach(response => {
+				response.value.data.events.forEach(event => {
+						var dayId = new Date(event.date).getDay();
+						event.competitors.forEach(competitor => {
+							if (!(competitor.name in teamToStats)) {
+								teamToStats[competitor.name] = [];
+							}
+							teamToStats[competitor.name].push(dayId == 0 ? 7 : dayId);
+						});
+					});
+			});
+		});
+	}
+
+	function render() {
+
+		var entries = [];
+		for (let [team, days] of Object.entries(teamToStats)) {
+			item = {};
+			item.name = team;
+			item.numGames = days.length;
+			item.days = []
+
+			days.sort();
+			days.forEach(day => {
+				item.days.push(dateMap[day]);
+			});
+
+			entries.push(item);
+		}
+
+		entries.sort((a,b) => b.numGames - a.numGames);
+
+		for (var i = 0; i < entries.length; i++) {
+		    var item = entries[i];
+
+		    var row = String.format(rowTemplate, item.name, item.numGames, item.days.join(", "));
+
+		    document.getElementById("tableBody").innerHTML += row;
+		}	
+	}
+
+	String.format = function() {
+      var s = arguments[0];
+      for (var i = 0; i < arguments.length - 1; i++) {
+          var reg = new RegExp("\\{" + i + "\\}", "gm");
+          s = s.replace(reg, arguments[i + 1]);
+      }
+      return s;
+  }
+
+</script>
+
+</head>
+<body onload="generateSchedule()">
+<style type="text/css">
+	.flex-container {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  justify-content: center;
+	}
+
+	.flex-container > div, p {
+	  background-color: #f1f1f1;
+	  width: 300px;
+	  margin: 10px;
+	  text-align: center;
+	  line-height: 30px;
+	  font-size: 14px;
+	}
+	.form-field {
+		text-align: center
+	}
+</style>
+
+
+<div id="top-level-div">
+
+	<div id="ranking-div" class="flex-container">
+		<table border="1">
+			<thead>
+				<tr>
+					<th>Team</th><th>Number of Games</th><th>Days</th>
+				</tr>
+			</thead>
+			<tbody id="tableBody">
+				
+			</tbody>
+		</table>
+	</div>
+
+</div>
+
+
+</body>
+</html>
