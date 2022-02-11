@@ -31,13 +31,14 @@
 	}
 
   function fetchData(){
-		var date = new Date();
+  	var date = new Date();
+		var currentTimeDate = new Date(date.getTime() - date.getTimezoneOffset()*60000);
 		var promises = []
-		while (date.getDay() != 1) {
-			var dateString = date.toISOString().split('T')[0].replace(/-/g,"");
+		while (currentTimeDate.getDay() != 1) {
+			var dateString = currentTimeDate.toISOString().split('T')[0].replace(/-/g,"");
 			var promise = axios.get(String.format(scheduleUrl, dateString))
 			promises.push(promise);
-			date.setDate(date.getDate() + 1);
+			currentTimeDate.setDate(currentTimeDate.getDay() + 1);
 		}
 
 		return Promise.allSettled(promises).then(responses => {
