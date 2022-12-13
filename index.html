@@ -157,19 +157,24 @@
 					teamToStats[teamAbbreviation] = teamData.stats;
 
 					var ownerName = teamToOwner[teamAbbreviation];
+                    var teamSummary = new Object();
 
-					ownerToRecord[ownerName].wins += teamData.stats[9].value;
-					ownerToRecord[ownerName].losses += teamData.stats[2].value;
-					ownerToRecord[ownerName].ties += teamData.stats[7].value;
-
-					var teamSummary = new Object();
-
+                    teamData.stats.forEach(stat => {
+                        if (stat.name == "wins") {
+					       ownerToRecord[ownerName].wins += stat.value;
+                           teamSummary.wins = stat.value;
+                        } else if (stat.name == "losses") {
+                        	ownerToRecord[ownerName].losses += stat.value;
+                            teamSummary.losses = stat.value;
+                        } else if (stat.name == "ties") {
+                    		ownerToRecord[ownerName].ties += stat.value;
+        					teamSummary.ties = stat.value;
+                        }
+                    });
+                    
 					teamSummary.abbreviation = teamData.team.abbreviation;
 					teamSummary.logos = teamData.team.logos;
-					teamSummary.wins = teamData.stats[9].value;
-					teamSummary.losses = teamData.stats[2].value;
-					teamSummary.ties = teamData.stats[7].value;
-
+					
 					ownerToTeams[ownerName].push(teamSummary);
 				}
 
