@@ -9,38 +9,38 @@
 	<script>
 
 	const teamToOwner = {
-		"ARI": "Jake",
-		"ATL": "",
-		"BAL": "Ryan",
-		"BUF": "Nathan",
+		"ARI": "",
+		"ATL": "Jon",
+		"BAL": "Rudy",
+		"BUF": "Jon",
 		"CAR": "Ossman",
-		"CHI": "Nathan",
-		"CIN": "Jon",
-		"CLE": "Cody",
-		"DAL": "Ossman",
-		"DEN": "John",
+		"CHI": "Cole",
+		"CIN": "Ossman",
+		"CLE": "Mike",
+		"DAL": "Cole",
+		"DEN": "Rudy",
 		"DET": "Ryan",
-		"GB": "Jake",
+		"GB": "Jon",
 		"HOU": "",
-		"IND": "Rudy",
-		"JAX": "Cole",
-		"LAC": "Cole",
-		"LAR": "Cody",
+		"IND": "John",
+		"JAX": "Ryan",
+		"LAC": "Mike",
+		"LAR": "John",
 		"LV": "Jake",
-		"KC": "Mike",
-		"MIA": "Jon",
-		"MIN": "Mike",
-		"NE": "Mike",
+		"KC": "John",
+		"MIA": "Nathan",
+		"MIN": "Ossman",
+		"NE": "Cody",
 		"NO": "Cole",
-		"NYG": "John",
-		"NYJ": "Cody",
-		"PHI": "Ryan",
-		"PIT": "Jon",
-		"SEA": "Nathan",
-		"SF": "John",
-		"TB": "Rudy",
-		"TEN": "Ossman",
-		"WSH": "Rudy"
+		"NYG": "Jake",
+		"NYJ": "Nathan",
+		"PHI": "Jake",
+		"PIT": "Rudy",
+		"SEA": "Cody",
+		"SF": "Cody",
+		"TB": "Nathan",
+		"TEN": "Ryan",
+		"WSH": "Mike"
 	};
 
 	var ownerToTeams = {
@@ -71,7 +71,7 @@
 	};
 
 	// regular season url: https://site.api.espn.com/apis/v2/sports/football/nfl/standings?seasontype=2
-	var espnStandingUrl = "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?seasontype=2";
+	var espnStandingUrl = "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?seasontype=1";
 
 	var rowTemplate = "<tr><td align=\"center\">{0}</td><td align=\"center\">{1}</td><td align=\"center\">{2}</td><td align=\"center\">{3}</td><td align=\"center\">{4}</td><td align=\"center\">{5}</td><td align=\"center\">{6}</td><td align=\"center\">{7}</td><td align=\"center\">{8}</td></tr>";
 	
