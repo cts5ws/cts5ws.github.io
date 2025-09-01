@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Team Owners Standings</title>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+
+
+        .standings-table {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px 10px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+
+
+        .rank {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .owner-name {
+            font-weight: 600;
+            color: #34495e;
+        }
+
+        .record {
+            font-weight: 500;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .team-logo {
+            width: 35px;
+            height: 35px;
+            object-fit: contain;
+        }
+
+        .team-record {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .win-pct-value {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .win-pct-high {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .win-pct-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .win-pct-low {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #e74c3c;
+        }
+
+        .last-updated {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            th, td {
+                padding: 10px 5px;
+                font-size: 0.85rem;
+            }
+
+            .team-logo {
+                width: 30px;
+                height: 30px;
+            }
+
+            .team-info {
+                gap: 4px;
+            }
+
+            .standings-table {
+                overflow-x: scroll;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>NFL Team Owners Standings</h1>
+    </div>
+
+    <div class="standings-table">
+        <div id="loading" class="loading">Loading standings...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <table id="standings" style="display: none;">
+            <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Owner</th>
+                <th>Overall Record</th>
+                <th>Win %</th>
+                <th colspan="2">Best Team</th>
+                <th colspan="2">2nd Team</th>
+                <th colspan="2">3rd Team</th>
+            </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="last-updated" id="lastUpdated"></div>
+</div>
+
+<script>
+    // Team to owner mapping
+    const teamToOwner = {
+        "ARI": "Jon",
+        "ATL": "Cole",
+        "BAL": "Jake",
+        "BUF": "Ryan",
+        "CAR": "Rohit",
+        "CHI": "Nathan",
+        "CIN": "Nathan",
+        "CLE": "",
+        "DAL": "John",
+        "DEN": "Cody",
+        "DET": "John",
+        "GB": "Mike",
+        "HOU": "Mike",
+        "IND": "Jake",
+        "JAX": "Jon",
+        "LAC": "Rohit",
+        "LAR": "Ossman",
+        "LV": "Jake",
+        "KC": "Rohit",
+        "MIA": "Mike",
+        "MIN": "Nathan",
+        "NE": "Cole",
+        "NO": "",
+        "NYG": "Ossman",
+        "NYJ": "Cody",
+        "PHI": "Ossman",
+        "PIT": "John",
+        "SEA": "Ryan",
+        "SF": "Cole",
+        "TB": "Jon",
+        "TEN": "Ryan",
+        "WSH": "Cody"
+    };
+
+    // Initialize data structures
+    const owners = ["Cody", "Cole", "Jake", "John", "Jon", "Mike", "Nathan", "Ossman", "Rohit", "Ryan"];
+    const ownerToTeams = {};
+    const ownerToRecord = {};
+    const teamToStats = {};
+
+    // Initialize owner data
+    owners.forEach(owner => {
+        ownerToTeams[owner] = [];
+        ownerToRecord[owner] = { wins: 0, losses: 0, ties: 0 };
+    });
+
+    // ESPN API endpoint
+    const espnStandingsUrl = "https://site.api.espn.com/apis/v2/sports/football/nfl/standings?seasontype=2";
+
+    // Main function to generate rankings
+    async function generateRanking() {
+        try {
+            await fetchAndAggregate();
+            renderRanking();
+            updateLastUpdated();
+        } catch (error) {
+            console.error('Error generating rankings:', error);
+            showError('Failed to load standings. Please refresh the page.');
+        }
+    }
+
+    // Fetch standings data
+    async function fetchAndAggregate() {
+        const response = await axios.get(espnStandingsUrl);
+        const afcTeams = response.data.children[0].standings.entries;
+        const nfcTeams = response.data.children[1].standings.entries;
+        const allTeams = [...afcTeams, ...nfcTeams];
+
+        allTeams.forEach(teamData => {
+            const teamAbbreviation = teamData.team.abbreviation;
+            const ownerName = teamToOwner[teamAbbreviation];
+
+            if (ownerName) {
+                teamToStats[teamAbbreviation] = teamData.stats;
+
+                const teamSummary = {
+                    abbreviation: teamAbbreviation,
+                    id: teamData.team.id,
+                    logos: teamData.team.logos,
+                    wins: 0,
+                    losses: 0,
+                    ties: 0
+                };
+
+                teamData.stats.forEach(stat => {
+                    if (stat.name === "wins") {
+                        ownerToRecord[ownerName].wins += stat.value;
+                        teamSummary.wins = stat.value;
+                    } else if (stat.name === "losses") {
+                        ownerToRecord[ownerName].losses += stat.value;
+                        teamSummary.losses = stat.value;
+                    } else if (stat.name === "ties") {
+                        ownerToRecord[ownerName].ties += stat.value;
+                        teamSummary.ties = stat.value;
+                    }
+                });
+
+
+
+                ownerToTeams[ownerName].push(teamSummary);
+            }
+        });
+    }
+
+
+
+    // Calculate win percentage for an owner
+    function calculateWinPercentage(wins, losses, ties) {
+        const totalGames = wins + losses + ties;
+        if (totalGames === 0) return 0;
+        // NFL win percentage counts ties as half a win
+        return ((wins + (ties * 0.5)) / totalGames) * 100;
+    }
+
+    // Get win percentage classification
+    function getWinPctClass(winPct) {
+        if (winPct >= 60) return 'win-pct-high';
+        if (winPct >= 40) return 'win-pct-medium';
+        return 'win-pct-low';
+    }
+
+    // Format win percentage display
+    function formatWinPct(winPct) {
+        return winPct.toFixed(1) + '%';
+    }
+
+    // Render the rankings table
+    function renderRanking() {
+        const ownerList = [];
+
+        for (const [owner, record] of Object.entries(ownerToRecord)) {
+            const winPct = calculateWinPercentage(record.wins, record.losses, record.ties);
+            ownerList.push({
+                owner,
+                wins: record.wins,
+                losses: record.losses,
+                ties: record.ties,
+                winPercentage: winPct
+            });
+        }
+
+        // Sort by wins (descending)
+        ownerList.sort((a, b) => b.wins - a.wins);
+
+        // Clear table body
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        let rankingCounter = 1;
+
+        ownerList.forEach((item, index) => {
+            const record = `${item.wins} - ${item.losses} - ${item.ties}`;
+            const teams = ownerToTeams[item.owner];
+
+            // Sort teams by wins
+            teams.sort((a, b) => b.wins - a.wins);
+
+            // Create row
+            const row = document.createElement('tr');
+
+            // Rank
+            const rankCell = document.createElement('td');
+            rankCell.innerHTML = `<span class="rank">${rankingCounter}</span>`;
+            row.appendChild(rankCell);
+
+            // Owner name
+            const ownerCell = document.createElement('td');
+            ownerCell.innerHTML = `<span class="owner-name">${item.owner}</span>`;
+            row.appendChild(ownerCell);
+
+            // Overall record
+            const recordCell = document.createElement('td');
+            recordCell.innerHTML = `<span class="record">${record}</span>`;
+            row.appendChild(recordCell);
+
+            // Win percentage
+            const winPctCell = document.createElement('td');
+            const winPctClass = getWinPctClass(item.winPercentage);
+            winPctCell.innerHTML = `<span class="win-pct-value ${winPctClass}">${formatWinPct(item.winPercentage)}</span>`;
+            row.appendChild(winPctCell);
+
+            // Team cells
+            teams.forEach(team => {
+                // Logo cell
+                const logoCell = document.createElement('td');
+                logoCell.innerHTML = `<div class="team-info"><img class="team-logo" src="${team.logos[0].href}" alt="${team.abbreviation}"></div>`;
+                row.appendChild(logoCell);
+
+                // Record cell
+                const teamRecordCell = document.createElement('td');
+                teamRecordCell.innerHTML = `<span class="team-record">${team.wins} - ${team.losses} - ${team.ties}</span>`;
+                row.appendChild(teamRecordCell);
+            });
+
+            tableBody.appendChild(row);
+
+            // Update ranking counter if next person has fewer wins
+            if (index < ownerList.length - 1 && item.wins !== ownerList[index + 1].wins) {
+                rankingCounter++;
+            }
+        });
+
+        // Show table and hide loading
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('standings').style.display = 'table';
+    }
+
+    // Update last updated timestamp
+    function updateLastUpdated() {
+        const now = new Date();
+        const timeString = now.toLocaleString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.getElementById('lastUpdated').textContent = `Last updated: ${timeString}`;
+    }
+
+    // Show error message
+    function showError(message) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = message;
+    }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', generateRanking);
+</script>
+</body>
+</html>
