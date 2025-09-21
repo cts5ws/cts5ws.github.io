@@ -81,7 +81,6 @@
 
 
         .rank {
-            font-size: 1.2rem;
             font-weight: bold;
             color: #2c3e50;
         }
@@ -102,6 +101,14 @@
             gap: 8px;
         }
 
+        .team-info-stacked {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
         .team-logo {
             width: 35px;
             height: 35px;
@@ -113,27 +120,7 @@
             color: #666;
         }
 
-        .win-pct-value {
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 4px;
-            white-space: nowrap;
-        }
 
-        .win-pct-high {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .win-pct-medium {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .win-pct-low {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
 
         .loading {
             text-align: center;
@@ -158,30 +145,104 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 5px;
             }
 
             .header h1 {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+
+            .header {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            /* Optimize table for mobile */
+            .standings-table {
+                font-size: 0.75rem;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                min-width: 100%;
+                width: auto;
             }
 
             th, td {
-                padding: 10px 5px;
-                font-size: 0.85rem;
+                padding: 8px 3px;
+                font-size: 0.7rem;
+                white-space: nowrap;
+            }
+
+            th {
+                font-size: 0.65rem;
+                padding: 10px 3px;
+            }
+
+            /* Rank column */
+            th:nth-child(1), td:nth-child(1) {
+                width: 8%;
+                min-width: 25px;
+            }
+
+            /* Owner column */
+            th:nth-child(2), td:nth-child(2) {
+                width: 12%;
+                min-width: 40px;
+                font-size: 0.65rem;
+            }
+
+            /* Record column */
+            th:nth-child(3), td:nth-child(3) {
+                width: 18%;
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+
+            /* Team logo columns */
+            th:nth-child(4), th:nth-child(6), th:nth-child(8),
+            td:nth-child(4), td:nth-child(6), td:nth-child(8) {
+                width: 10%;
+                min-width: 35px;
+                padding: 5px 2px;
+            }
+
+            /* Team record columns */
+            th:nth-child(5), th:nth-child(7), th:nth-child(9),
+            td:nth-child(5), td:nth-child(7), td:nth-child(9) {
+                width: 14%;
+                min-width: 45px;
+                font-size: 0.6rem;
             }
 
             .team-logo {
-                width: 30px;
-                height: 30px;
+                width: 20px;
+                height: 20px;
             }
 
-            .team-info {
-                gap: 4px;
+            .rank {
+                font-size: 0.7rem;
             }
 
-            .standings-table {
-                overflow-x: scroll;
+            .owner-name {
+                font-size: 0.65rem;
+                font-weight: 600;
             }
+
+            .record {
+                font-size: 0.65rem;
+            }
+
+
+
+            .team-record {
+                font-size: 0.6rem;
+            }
+
+
+
+
         }
     </style>
 </head>
@@ -199,11 +260,10 @@
             <tr>
                 <th>Rank</th>
                 <th>Owner</th>
-                <th>Overall Record</th>
-                <th>Win %</th>
-                <th colspan="2">Best Team</th>
-                <th colspan="2">2nd Team</th>
-                <th colspan="2">3rd Team</th>
+                <th>Record</th>
+                <th colspan="2">T1</th>
+                <th colspan="2">T2</th>
+                <th colspan="2">T3</th>
             </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -364,7 +424,27 @@
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
 
-        let rankingCounter = 1;
+        // Assign ranks with golf-style ranking for ties (tied players get LAST position they occupy)
+        for (let i = 0; i < ownerList.length; i++) {
+            let tiedCount = 1;
+            // Count how many people are tied with this person
+            for (let j = i + 1; j < ownerList.length; j++) {
+                if (ownerList[j].wins === ownerList[i].wins) {
+                    tiedCount++;
+                } else {
+                    break;
+                }
+            }
+            
+            // All tied players get the rank of the last position in the group
+            const lastPositionRank = i + tiedCount;
+            for (let k = i; k < i + tiedCount; k++) {
+                ownerList[k].rank = lastPositionRank;
+            }
+            
+            // Skip past the tied players
+            i += tiedCount - 1;
+        }
 
         ownerList.forEach((item, index) => {
             const record = `${item.wins} - ${item.losses} - ${item.ties}`;
@@ -378,7 +458,7 @@
 
             // Rank
             const rankCell = document.createElement('td');
-            rankCell.innerHTML = `<span class="rank">${rankingCounter}</span>`;
+            rankCell.innerHTML = `<span class="rank">${item.rank}</span>`;
             row.appendChild(rankCell);
 
             // Owner name
@@ -390,12 +470,6 @@
             const recordCell = document.createElement('td');
             recordCell.innerHTML = `<span class="record">${record}</span>`;
             row.appendChild(recordCell);
-
-            // Win percentage
-            const winPctCell = document.createElement('td');
-            const winPctClass = getWinPctClass(item.winPercentage);
-            winPctCell.innerHTML = `<span class="win-pct-value ${winPctClass}">${formatWinPct(item.winPercentage)}</span>`;
-            row.appendChild(winPctCell);
 
             // Team cells
             teams.forEach(team => {
@@ -411,11 +485,6 @@
             });
 
             tableBody.appendChild(row);
-
-            // Update ranking counter if next person has fewer wins
-            if (index < ownerList.length - 1 && item.wins !== ownerList[index + 1].wins) {
-                rankingCounter++;
-            }
         });
 
         // Show table and hide loading
@@ -444,7 +513,7 @@
         document.getElementById('error').textContent = message;
     }
 
-    // Initialize on page load
+    // Initialize on page load - updated ranking logic
     window.addEventListener('DOMContentLoaded', generateRanking);
 </script>
 </body>

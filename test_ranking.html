@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ranking Logic Test</title>
+</head>
+<body>
+    <h1>Ranking Logic Test</h1>
+    <div id="test-results"></div>
+
+    <script>
+        function testGolfRanking() {
+            // Test data: wins for 10 players
+            const testData = [
+                { name: "Player1", wins: 15 },  // Position 1 -> Rank 1
+                { name: "Player2", wins: 12 },  // Position 2 -> Rank 5 (tied with 3 others)
+                { name: "Player3", wins: 12 },  // Position 3 -> Rank 5 (tied)
+                { name: "Player4", wins: 12 },  // Position 4 -> Rank 5 (tied)
+                { name: "Player5", wins: 12 },  // Position 5 -> Rank 5 (tied)
+                { name: "Player6", wins: 10 },  // Position 6 -> Rank 6 (no ties)
+                { name: "Player7", wins: 8 },   // Position 7 -> Rank 8 (tied with 1 other)
+                { name: "Player8", wins: 8 },   // Position 8 -> Rank 8 (tied)
+                { name: "Player9", wins: 6 },   // Position 9 -> Rank 9 (no ties)
+                { name: "Player10", wins: 4 }   // Position 10 -> Rank 10 (no ties)
+            ];
+
+            // Sort by wins descending (already sorted in this case)
+            testData.sort((a, b) => b.wins - a.wins);
+
+            // Golf ranking algorithm: tied players get the LAST position they occupy
+            for (let i = 0; i < testData.length; i++) {
+                let tiedCount = 1;
+                // Count how many people are tied with this person
+                for (let j = i + 1; j < testData.length; j++) {
+                    if (testData[j].wins === testData[i].wins) {
+                        tiedCount++;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // All tied players get the rank of the last position in the group
+                const lastPositionRank = i + tiedCount;
+                for (let k = i; k < i + tiedCount; k++) {
+                    testData[k].rank = lastPositionRank;
+                }
+                
+                // Skip past the tied players
+                i += tiedCount - 1;
+            }
+
+            // Display results
+            let results = "<h2>Test Results:</h2><table border='1'><tr><th>Position</th><th>Name</th><th>Wins</th><th>Rank</th></tr>";
+            testData.forEach((player, index) => {
+                results += `<tr><td>${index + 1}</td><td>${player.name}</td><td>${player.wins}</td><td>${player.rank}</td></tr>`;
+            });
+            results += "</table>";
+
+            results += "<h3>Expected: Ranks should be 1, 5, 5, 5, 5, 6, 8, 8, 9, 10</h3>";
+            results += "<h3>Actual: " + testData.map(p => p.rank).join(", ") + "</h3>";
+
+            document.getElementById('test-results').innerHTML = results;
+        }
+
+        // Run test when page loads
+        window.addEventListener('DOMContentLoaded', testGolfRanking);
+    </script>
+</body>
+</html>
+</script>
+</body>
+</html>
