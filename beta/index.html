@@ -361,7 +361,7 @@
         <table id="standings" style="display: none;">
             <thead>
             <tr>
-                <th>Rank</th>
+                <th></th>
                 <th>Owner</th>
                 <th>Record</th>
                 <th>T1</th>
@@ -674,10 +674,21 @@
         const venueIcon = g.venueSide === 'vs' ? '🏠' : '✈️';
         
         if (g.state === 'pre') {
-            const kickoffStr = new Intl.DateTimeFormat(undefined, {
+            const kickoffDate = new Date(g.kickoffIso);
+            
+            // Get shortened day of week (3 letters)
+            const dayOfWeek = new Intl.DateTimeFormat(undefined, {
+                weekday: 'short',
+                timeZone: tz
+            }).format(kickoffDate);
+            
+            // Get time
+            const timeStr = new Intl.DateTimeFormat(undefined, {
                 hour: 'numeric', minute: '2-digit',
                 timeZone: tz
-            }).format(new Date(g.kickoffIso));
+            }).format(kickoffDate);
+            
+            const kickoffStr = `${dayOfWeek} ${timeStr}`;
             
             return `
                 <div class="game-opponent">
@@ -690,9 +701,17 @@
         
         if (g.state === 'in') {
             // prefer descriptive states like Halftime when present
-            const phase = g.desc && g.desc.toLowerCase().includes('half')
-                ? g.desc
-                : (g.shortDetail || (g.period >= 5 ? 'OT' : `Q${g.period || ''}`)) + (g.clock ? ` ${g.clock}` : '');
+            let phase;
+            if (g.desc && g.desc.toLowerCase().includes('half')) {
+                phase = g.desc;
+            } else if (g.shortDetail && !g.shortDetail.includes(g.clock)) {
+                // Use shortDetail if it doesn't already contain the clock time
+                phase = g.shortDetail;
+            } else {
+                // Build our own phase string to avoid duplication
+                const quarterStr = g.period >= 5 ? 'OT' : `Q${g.period || ''}`;
+                phase = quarterStr + (g.clock ? ` ${g.clock}` : '');
+            }
             
             return `
                 <div class="game-score game-live">${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore}</div>
