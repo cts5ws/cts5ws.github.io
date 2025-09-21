@@ -120,6 +120,14 @@
             color: #666;
         }
 
+        .game-line {
+            font-size: 0.75rem;
+            color: #555;
+            text-align: center;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
 
 
         .loading {
@@ -473,9 +481,16 @@
 
             // Team cells
             teams.forEach(team => {
-                // Logo cell
+                // Logo cell with game info
                 const logoCell = document.createElement('td');
-                logoCell.innerHTML = `<div class="team-info"><img class="team-logo" src="${team.logos[0].href}" alt="${team.abbreviation}"></div>`;
+                logoCell.className = 'team-cell';
+                logoCell.setAttribute('data-team', team.abbreviation);
+                logoCell.innerHTML = `
+                    <div class="team-info">
+                        <img class="team-logo" src="${team.logos[0].href}" alt="${team.abbreviation}">
+                    </div>
+                    <div class="game-line">Loading...</div>
+                `;
                 row.appendChild(logoCell);
 
                 // Record cell
@@ -513,8 +528,124 @@
         document.getElementById('error').textContent = message;
     }
 
-    // Initialize on page load - updated ranking logic
-    window.addEventListener('DOMContentLoaded', generateRanking);
+    // ===== GAME INFORMATION FUNCTIONS =====
+
+    // Fetch current week's scoreboard data
+    async function fetchScoreboard() {
+        const res = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Scoreboard fetch failed');
+        return res.json();
+    }
+
+    // Index games by team abbreviation for quick lookup
+    function indexGamesByTeam(scoreboardJson) {
+        const byTeam = new Map(); // abbr -> event
+        for (const ev of scoreboardJson.events || []) {
+            const comp = ev.competitions?.[0];
+            if (!comp) continue;
+            for (const c of comp.competitors || []) {
+                const abbr = c.team?.abbreviation;
+                if (abbr) byTeam.set(abbr, ev);
+            }
+        }
+        return byTeam;
+    }
+
+    // Normalize one team's view of a game
+    function normalizeTeamGame(event, teamAbbr) {
+        const comp = event.competitions[0];
+        const status = comp.status?.type?.state; // 'pre'|'in'|'post'
+        const period = comp.status?.period ?? null;
+        const clock = comp.status?.displayClock ?? '';
+        const desc = comp.status?.type?.description ?? '';
+        const shortDetail = comp.status?.type?.shortDetail ?? '';
+        const [home, away] = comp.competitors.sort((a,b)=> a.homeAway === 'home' ? 1 : -1);
+        const isHome = home.team.abbreviation === teamAbbr;
+        const self = isHome ? home : away;
+        const opp = isHome ? away : home;
+        const kickoffIso = event.date;
+        const winnerAbbr = comp.competitors.find(x => x.winner)?.team?.abbreviation ?? null;
+
+        return {
+            state: status, period, clock, desc, shortDetail, kickoffIso,
+            homeAbbr: home.team.abbreviation, awayAbbr: away.team.abbreviation,
+            homeScore: home.score, awayScore: away.score,
+            selfAbbr: teamAbbr, oppAbbr: opp.team.abbreviation,
+            venueSide: isHome ? 'vs' : '@',
+            winnerAbbr,
+            eventId: event.id
+        };
+    }
+
+    // Format game line string
+    function formatTeamLine(g) {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const kickoffStr = new Intl.DateTimeFormat(undefined, {
+            weekday: 'short', hour: 'numeric', minute: '2-digit',
+            month: 'short', day: 'numeric', timeZone: tz
+        }).format(new Date(g.kickoffIso));
+
+        if (g.state === 'pre') {
+            return `${g.venueSide} ${g.oppAbbr} — ${kickoffStr}`;
+        }
+        if (g.state === 'in') {
+            // prefer descriptive states like Halftime when present
+            const phase = g.desc && g.desc.toLowerCase().includes('half')
+                ? g.desc
+                : (g.shortDetail || (g.period >= 5 ? 'OT' : `Q${g.period || ''}`)) + (g.clock ? ` ${g.clock}` : '');
+            return `${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore} — ${phase}`.trim();
+        }
+        if (g.state === 'post') {
+            const wl = g.winnerAbbr ? (g.winnerAbbr === g.selfAbbr ? '(W)' : '(L)') : '';
+            return `${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore} — Final ${wl}`.trim();
+        }
+        // fallback (e.g., canceled)
+        return `${g.venueSide} ${g.oppAbbr} — ${g.desc || '—'}`;
+    }
+
+    // Render game lines under team cells
+    function renderLines(byTeam) {
+        document.querySelectorAll('[data-team]').forEach(el => {
+            const abbr = el.getAttribute('data-team');
+            const event = byTeam.get(abbr);
+            const target = el.querySelector('.game-line');
+            if (!target) return;
+            
+            if (!event) {
+                target.textContent = 'BYE';
+            } else {
+                const g = normalizeTeamGame(event, abbr);
+                target.textContent = formatTeamLine(g);
+            }
+        });
+    }
+
+    // Main tick function to update game info
+    async function tickGameInfo() {
+        try {
+            const data = await fetchScoreboard();
+            const byTeam = indexGamesByTeam(data);
+            renderLines(byTeam);
+        } catch (e) {
+            console.error('Game info update failed:', e);
+            // Show error in game lines
+            document.querySelectorAll('.game-line').forEach(el => {
+                el.textContent = 'Error';
+            });
+        }
+    }
+
+    // Initialize game info polling
+    function startGameInfoPolling() {
+        tickGameInfo(); // Initial load
+        setInterval(tickGameInfo, 30000); // Update every 30 seconds
+    }
+
+    // Initialize on page load - updated ranking logic and game info
+    window.addEventListener('DOMContentLoaded', async () => {
+        await generateRanking();
+        startGameInfoPolling();
+    });
 </script>
 </body>
 </html>
