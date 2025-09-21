@@ -257,6 +257,49 @@
             margin-top: 2px;
         }
 
+        /* Teams cell styling */
+        .teams-cell {
+            padding: 5px 4px;
+        }
+
+        .teams-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .owner-record {
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 4px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .teams-grid {
+            display: flex;
+            flex-direction: row;
+            gap: 6px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .team-card {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 6px 4px;
+            min-width: 100px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .team-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
 
 
         .loading {
@@ -396,11 +439,7 @@
             <thead>
             <tr>
                 <th></th>
-                <th>Owner</th>
-                <th>Record</th>
-                <th>T1</th>
-                <th>T2</th>
-                <th>T3</th>
+                <th></th>
             </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -593,36 +632,48 @@
             // Create row
             const row = document.createElement('tr');
 
-            // Rank
-            const rankCell = document.createElement('td');
-            rankCell.innerHTML = `<span class="rank">${item.rank}</span>`;
-            row.appendChild(rankCell);
+            // Combined Rank and Owner
+            const rankOwnerCell = document.createElement('td');
+            rankOwnerCell.innerHTML = `<span class="rank">${item.rank})</span> <span class="owner-name">${item.owner}</span>`;
+            row.appendChild(rankOwnerCell);
 
-            // Owner name
-            const ownerCell = document.createElement('td');
-            ownerCell.innerHTML = `<span class="owner-name">${item.owner}</span>`;
-            row.appendChild(ownerCell);
-
-            // Overall record
-            const recordCell = document.createElement('td');
-            recordCell.innerHTML = `<span class="record">${record}</span>`;
-            row.appendChild(recordCell);
-
-            // Team cells with condensed layout
+            // Teams cell - containing record and teams layout
+            const teamsCell = document.createElement('td');
+            teamsCell.className = 'teams-cell';
+            
+            // Create teams container
+            const teamsContainer = document.createElement('div');
+            teamsContainer.className = 'teams-container';
+            
+            // Add owner record at top
+            const ownerRecord = document.createElement('div');
+            ownerRecord.className = 'owner-record';
+            ownerRecord.textContent = record;
+            teamsContainer.appendChild(ownerRecord);
+            
+            // Create teams grid
+            const teamsGrid = document.createElement('div');
+            teamsGrid.className = 'teams-grid';
+            
             teams.forEach(team => {
-                // Combined cell with logo, record, and game info
-                const teamCell = document.createElement('td');
-                teamCell.className = 'team-cell';
-                teamCell.setAttribute('data-team', team.abbreviation);
-                teamCell.innerHTML = `
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.setAttribute('data-team', team.abbreviation);
+                
+                teamCard.innerHTML = `
                     <div class="team-info">
                         <img class="team-logo" src="${team.logos[0].href}" alt="${team.abbreviation}">
                         <div class="team-record">${team.wins} - ${team.losses} - ${team.ties}</div>
                     </div>
                     <div class="game-line">Loading...</div>
                 `;
-                row.appendChild(teamCell);
+                
+                teamsGrid.appendChild(teamCard);
             });
+            
+            teamsContainer.appendChild(teamsGrid);
+            teamsCell.appendChild(teamsContainer);
+            row.appendChild(teamsCell);
 
             tableBody.appendChild(row);
         });
