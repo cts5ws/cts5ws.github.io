@@ -140,14 +140,48 @@
         }
 
         .game-line.game-state-in {
-            background-color: #ffebee !important;
-            border: 1px solid #ffcdd2;
+            /* Base neutral color for live games - will be overridden by win/loss classes */
+            background-color: #f3f4f6 !important;
+            border: 1px solid #d1d5db;
             animation: pulse-live 2s infinite;
         }
 
         .game-line.game-state-post {
-            background-color: #e8f5e8 !important;
-            border: 1px solid #c8e6c8;
+            /* Base neutral color for completed games - will be overridden by win/loss classes */
+            background-color: #f9fafb !important;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Win/Loss/Tie color classes for live games */
+        .game-line.game-state-in.game-winning {
+            background-color: #dcfce7 !important;
+            border: 1px solid #86efac;
+        }
+
+        .game-line.game-state-in.game-losing {
+            background-color: #fee2e2 !important;
+            border: 1px solid #fca5a5;
+        }
+
+        .game-line.game-state-in.game-tied {
+            background-color: #fef3c7 !important;
+            border: 1px solid #fcd34d;
+        }
+
+        /* Win/Loss/Tie color classes for completed games */
+        .game-line.game-state-post.game-won {
+            background-color: #dcfce7 !important;
+            border: 1px solid #22c55e;
+        }
+
+        .game-line.game-state-post.game-lost {
+            background-color: #fee2e2 !important;
+            border: 1px solid #ef4444;
+        }
+
+        .game-line.game-state-post.game-tied {
+            background-color: #fef3c7 !important;
+            border: 1px solid #eab308;
         }
 
         .game-line.game-state-bye {
@@ -205,7 +239,7 @@
         }
 
         .game-live {
-            color: #e74c3c;
+            color: #000000;
             font-weight: 600;
         }
 
@@ -744,6 +778,22 @@
         `;
     }
 
+    // Determine game outcome class based on score
+    function getGameOutcomeClass(g) {
+        if (g.state === 'pre') return ''; // No outcome for pre-game
+        
+        const selfScore = g.selfAbbr === g.homeAbbr ? parseInt(g.homeScore) : parseInt(g.awayScore);
+        const oppScore = g.selfAbbr === g.homeAbbr ? parseInt(g.awayScore) : parseInt(g.homeScore);
+        
+        if (selfScore > oppScore) {
+            return g.state === 'in' ? 'game-winning' : 'game-won';
+        } else if (selfScore < oppScore) {
+            return g.state === 'in' ? 'game-losing' : 'game-lost';
+        } else {
+            return 'game-tied'; // Same class for both live ties and completed ties
+        }
+    }
+
     // Render game lines under team cells with state classes
     function renderLines(byTeam) {
         document.querySelectorAll('[data-team]').forEach(el => {
@@ -766,8 +816,11 @@
                 const stateClass = `game-state-${g.state}`;
                 target.classList.add(stateClass);
                 
-                // Debug logging (remove later)
-                console.log(`Team ${abbr}: state=${g.state}, class=${stateClass}`);
+                // Add win/loss/tie class for coloring
+                const outcomeClass = getGameOutcomeClass(g);
+                if (outcomeClass) {
+                    target.classList.add(outcomeClass);
+                }
                 
                 target.innerHTML = formatTeamLineHTML(g);
             }
