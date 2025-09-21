@@ -121,11 +121,106 @@
         }
 
         .game-line {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #555;
             text-align: center;
             margin-top: 4px;
+            line-height: 1.2;
+            min-height: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .game-line.game-state-pre {
+            background-color: #e3f2fd !important;
+            border: 1px solid #bbdefb;
+        }
+
+        .game-line.game-state-in {
+            background-color: #ffebee !important;
+            border: 1px solid #ffcdd2;
+            animation: pulse-live 2s infinite;
+        }
+
+        .game-line.game-state-post {
+            background-color: #e8f5e8 !important;
+            border: 1px solid #c8e6c8;
+        }
+
+        .game-line.game-state-bye {
+            background-color: #f5f5f5 !important;
+            border: 1px solid #e0e0e0;
+        }
+
+        @keyframes pulse-live {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.7; }
+        }
+
+        .game-opponent {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .venue-icon {
+            font-size: 0.6rem;
+        }
+
+        .game-time {
+            color: #666;
+            font-size: 0.65rem;
+            margin-bottom: 1px;
+        }
+
+        .game-score {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.68rem;
+        }
+
+        .game-status {
+            color: #e67e22;
             font-weight: 500;
+            font-size: 0.65rem;
+        }
+
+        .game-final {
+            font-weight: 600;
+        }
+
+        .game-final .win-indicator {
+            color: #27ae60;
+        }
+
+        .game-final .loss-indicator {
+            color: #e74c3c;
+        }
+
+        .game-live {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .team-record {
+            font-size: 0.65rem;
+            color: #666;
+            margin-top: 2px;
         }
 
 
@@ -269,9 +364,9 @@
                 <th>Rank</th>
                 <th>Owner</th>
                 <th>Record</th>
-                <th colspan="2">T1</th>
-                <th colspan="2">T2</th>
-                <th colspan="2">T3</th>
+                <th>T1</th>
+                <th>T2</th>
+                <th>T3</th>
             </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -479,24 +574,20 @@
             recordCell.innerHTML = `<span class="record">${record}</span>`;
             row.appendChild(recordCell);
 
-            // Team cells
+            // Team cells with condensed layout
             teams.forEach(team => {
-                // Logo cell with game info
-                const logoCell = document.createElement('td');
-                logoCell.className = 'team-cell';
-                logoCell.setAttribute('data-team', team.abbreviation);
-                logoCell.innerHTML = `
+                // Combined cell with logo, record, and game info
+                const teamCell = document.createElement('td');
+                teamCell.className = 'team-cell';
+                teamCell.setAttribute('data-team', team.abbreviation);
+                teamCell.innerHTML = `
                     <div class="team-info">
                         <img class="team-logo" src="${team.logos[0].href}" alt="${team.abbreviation}">
+                        <div class="team-record">${team.wins} - ${team.losses} - ${team.ties}</div>
                     </div>
                     <div class="game-line">Loading...</div>
                 `;
-                row.appendChild(logoCell);
-
-                // Record cell
-                const teamRecordCell = document.createElement('td');
-                teamRecordCell.innerHTML = `<span class="team-record">${team.wins} - ${team.losses} - ${team.ties}</span>`;
-                row.appendChild(teamRecordCell);
+                row.appendChild(teamCell);
             });
 
             tableBody.appendChild(row);
@@ -577,33 +668,64 @@
         };
     }
 
-    // Format game line string
-    function formatTeamLine(g) {
+    // Format game line HTML with enhanced styling and icons
+    function formatTeamLineHTML(g) {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const kickoffStr = new Intl.DateTimeFormat(undefined, {
-            weekday: 'short', hour: 'numeric', minute: '2-digit',
-            month: 'short', day: 'numeric', timeZone: tz
-        }).format(new Date(g.kickoffIso));
-
+        const venueIcon = g.venueSide === 'vs' ? '🏠' : '✈️';
+        
         if (g.state === 'pre') {
-            return `${g.venueSide} ${g.oppAbbr} — ${kickoffStr}`;
+            const kickoffStr = new Intl.DateTimeFormat(undefined, {
+                hour: 'numeric', minute: '2-digit',
+                timeZone: tz
+            }).format(new Date(g.kickoffIso));
+            
+            return `
+                <div class="game-opponent">
+                    <span class="venue-icon">${venueIcon}</span>
+                    ${g.venueSide} ${g.oppAbbr}
+                </div>
+                <div class="game-time">${kickoffStr}</div>
+            `;
         }
+        
         if (g.state === 'in') {
             // prefer descriptive states like Halftime when present
             const phase = g.desc && g.desc.toLowerCase().includes('half')
                 ? g.desc
                 : (g.shortDetail || (g.period >= 5 ? 'OT' : `Q${g.period || ''}`)) + (g.clock ? ` ${g.clock}` : '');
-            return `${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore} — ${phase}`.trim();
+            
+            return `
+                <div class="game-score game-live">${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore}</div>
+                <div class="game-status game-live">${phase}</div>
+            `;
         }
+        
         if (g.state === 'post') {
-            const wl = g.winnerAbbr ? (g.winnerAbbr === g.selfAbbr ? '(W)' : '(L)') : '';
-            return `${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore} — Final ${wl}`.trim();
+            let wlFormatted = '';
+            if (g.winnerAbbr) {
+                const isWin = g.winnerAbbr === g.selfAbbr;
+                const wlClass = isWin ? 'win-indicator' : 'loss-indicator';
+                const wlText = isWin ? '(W)' : '(L)';
+                wlFormatted = `<span class="${wlClass}">${wlText}</span>`;
+            }
+            
+            return `
+                <div class="game-score">${g.awayAbbr} ${g.awayScore} @ ${g.homeAbbr} ${g.homeScore}</div>
+                <div class="game-status game-final">Final ${wlFormatted}</div>
+            `;
         }
+        
         // fallback (e.g., canceled)
-        return `${g.venueSide} ${g.oppAbbr} — ${g.desc || '—'}`;
+        return `
+            <div class="game-opponent">
+                <span class="venue-icon">${venueIcon}</span>
+                ${g.venueSide} ${g.oppAbbr}
+            </div>
+            <div class="game-status">${g.desc || '—'}</div>
+        `;
     }
 
-    // Render game lines under team cells
+    // Render game lines under team cells with state classes
     function renderLines(byTeam) {
         document.querySelectorAll('[data-team]').forEach(el => {
             const abbr = el.getAttribute('data-team');
@@ -611,11 +733,24 @@
             const target = el.querySelector('.game-line');
             if (!target) return;
             
+            // Clear existing state classes
+            target.className = 'game-line';
+            
             if (!event) {
-                target.textContent = 'BYE';
+                target.innerHTML = '<div class="game-status">BYE</div>';
+                // Add BYE state for neutral background
+                target.classList.add('game-state-bye');
             } else {
                 const g = normalizeTeamGame(event, abbr);
-                target.textContent = formatTeamLine(g);
+                
+                // Add appropriate state class for background color
+                const stateClass = `game-state-${g.state}`;
+                target.classList.add(stateClass);
+                
+                // Debug logging (remove later)
+                console.log(`Team ${abbr}: state=${g.state}, class=${stateClass}`);
+                
+                target.innerHTML = formatTeamLineHTML(g);
             }
         });
     }
