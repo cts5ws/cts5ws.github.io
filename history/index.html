@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The completed-season archive and analysis for Cole's NFL wins pool.">
+  <title>NFL Wins Pool History</title>
+  <link rel="stylesheet" href="./history.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to history</a>
+  <header>
+    <p class="eyebrow">NFL wins pool archive</p>
+    <h1>NFL Wins Pool History</h1>
+    <p>Completed seasons, every draft pick, and a careful look at what happened from the first selection to the teams nobody drafted.</p>
+  </header>
+  <main id="main-content" tabindex="-1">
+    <div id="history-app">
+      <section aria-labelledby="fallback-title">
+        <h2 id="fallback-title">Historical results</h2>
+        <p>The interactive archive requires JavaScript, but the methodology and scope remain available below.</p>
+      </section>
+    </div>
+    <section class="methodology" aria-labelledby="methodology-title">
+      <p class="eyebrow">Read the numbers correctly</p>
+      <h2 id="methodology-title">Methodology and provenance</h2>
+      <p><strong>Official result:</strong> raw wins decide final standings and titles. The 17-game-equivalent normalization is only a comparison tool for seasons in which teams played different numbers of games.</p>
+      <p><strong>Best-available regret:</strong> this is a one-change-per-pick hindsight measure. It asks how many wins a drafter left on the board at that moment while preserving all earlier actual picks; it is not a replay of the whole draft.</p>
+      <p><strong>Perfect replay:</strong> this separate counterfactual is the globally coherent highest-win remaining selection at each pick, using a stable team ID tiebreak. It describes hindsight, not a strategy available before the season.</p>
+      <p><strong>Names:</strong> participant aliases from source workbooks are merged under canonical display names. This prevents one person from appearing as separate careers when a workbook used a nickname.</p>
+    </section>
+  </main>
+  <footer><p>Completed-season archive. No live scores or remote data requests.</p></footer>
+  <script type="module" src="./history.mjs"></script>
+</body>
+</html>
